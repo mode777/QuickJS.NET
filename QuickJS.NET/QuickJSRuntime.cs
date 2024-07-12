@@ -77,7 +77,7 @@ namespace QuickJS
 		{
 			if (!_handle.IsAllocated)
 				return;
-			js_std_free_handlers(_runtime);
+			//js_std_free_handlers(_runtime);
 			JS_FreeRuntime(_runtime);
 			_handle.Free();
 		}

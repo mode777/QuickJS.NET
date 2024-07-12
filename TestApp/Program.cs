@@ -17,8 +17,8 @@ namespace TestApp
 			using (var cx = rt.CreateContext())
 			{
 				cx.StdAddHelpers();
-				cx.InitModuleStd("std");
-				cx.InitModuleOS("os");
+				//cx.InitModuleStd("std");
+				//cx.InitModuleOS("os");
 
 				try
 				{
@@ -31,7 +31,8 @@ namespace TestApp
 				}
 
 				Console.WriteLine();
-				(cx.EvalFile(@"G:\BUILD\QuickJS\repl.js", Encoding.ASCII, JSEvalFlags.Module | JSEvalFlags.Strip) as IDisposable)?.Dispose();
+
+				//(cx.EvalFile(@"G:\BUILD\QuickJS\repl.js", Encoding.ASCII, JSEvalFlags.Module | JSEvalFlags.Strip) as IDisposable)?.Dispose();
 				rt.RunStdLoop(cx);
 			}
 

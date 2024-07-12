@@ -15,7 +15,6 @@ namespace TestApp2
 		internal static unsafe JSModuleDef my_module_loader(JSContext ctx, string module_name, IntPtr opaque)
 		{
 			var bytes = File.ReadAllBytes(module_name);
-			var module_name_bytes = Encoding.ASCII.GetBytes(module_name);
 			fixed (byte* p = bytes)
 			{
 				// Convert module_name to ASCII byte*
@@ -35,6 +34,7 @@ namespace TestApp2
 
 		internal static void my_host_promise_rejection_tracker(JSContext ctx, JSValue promise, JSValue reason, bool is_handled, IntPtr opaque)
 		{
+			System.Console.WriteLine("Promise rejected!");
 			if (!is_handled)
 			{
 				if (JS_IsError(ctx, reason))
@@ -42,6 +42,34 @@ namespace TestApp2
 					js_std_dump_error(ctx);
 				}
 			}
+		}
+		
+
+		internal static unsafe JSValue js_eval_buf(JSContext ctx, byte[] bytes, string name, JSEvalFlags eval_flags)
+		{
+			fixed (byte* p = bytes)
+			{
+				JSValue val;
+
+				if ((eval_flags & JSEvalFlags.TypeMask) == JSEvalFlags.Module) {
+					/* for the modules, we compile then run to be able to set
+					import.meta */
+					val = JS_Eval(ctx, p, bytes.Length, name,
+								eval_flags | JSEvalFlags.CompileOnly);
+					if (!JS_IsException(val)) {
+						js_module_set_import_meta(ctx, val, true, true);
+						val = JS_EvalFunction(ctx, val);
+					}
+				} else {
+					val = JS_Eval(ctx, p, bytes.Length, name, eval_flags);
+				}
+				if (JS_IsException(val)) {
+					Console.WriteLine("We got an exception\n");
+					js_std_dump_error(ctx);
+				}
+				return val;
+			}
+
 		}
 	}
 }

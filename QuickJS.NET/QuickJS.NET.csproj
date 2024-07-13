@@ -4,8 +4,7 @@
     <TargetFrameworks>netstandard2.1</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>QuickJS</RootNamespace>
-    <Platforms>AnyCPU;x64</Platforms>
-    <RuntimeIdentifiers>win-x86;win-x64;linux-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x86;win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
     <AssemblyOriginatorKeyFile>QuickJS.snk</AssemblyOriginatorKeyFile>
     <SignAssembly Condition="Exists($(AssemblyOriginatorKeyFile))">true</SignAssembly>
     <Configurations>Debug;Release;Nuget_Release</Configurations>

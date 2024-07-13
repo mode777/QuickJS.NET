@@ -1,0 +1,17 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Input Source Code";
+}
+
+<div class="container mt-5">
+    <h1 class="text-center">Input Source Code</h1>
+    <form method="post" class="mt-3">
+        <div class="form-group">
+            <label for="SourceCode">Source Code</label>
+            <textarea asp-for="SourceCode" class="form-control" id="SourceCode" rows="10"></textarea>
+            <span asp-validation-for="SourceCode" class="text-danger"></span>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Submit</button>
+    </form>
+</div>

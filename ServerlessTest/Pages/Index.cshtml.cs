@@ -3,7 +3,6 @@ using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using QuickJS;
-using QuickJS.Lite;
 using QuickJS.Native;
 using static QuickJS.Native.QuickJSNativeApi;
 
@@ -11,15 +10,15 @@ namespace ServerlessTest.Pages;
 
 public class IndexModel : PageModel
 {
-	private readonly QuickJsRuntime _runtime;
+	private readonly QuickJsContext _jsContext;
 
 	[BindProperty]
     [Required]
     public string SourceCode { get; set; }
 
-    public IndexModel(QuickJsRuntime runtime)
+    public IndexModel(QuickJsContext jsContext)
     {
-		this._runtime = runtime;
+		this._jsContext = jsContext;
 	}
 
     public void OnGet()
@@ -33,8 +32,7 @@ public class IndexModel : PageModel
             return Page();
         }
 
-        using var ctx = _runtime.NewContext();
-        ctx.EvalString(SourceCode);
+        _jsContext.EvalString(SourceCode);
 
         // Redirect to a confirmation page or display a success message
         TempData["Message"] = "Source code submitted successfully!";

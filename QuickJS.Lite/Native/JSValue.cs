@@ -177,14 +177,12 @@ namespace QuickJS.Native
 		/// <param name="context">The context in which to create the new object.</param>
 		/// <returns>A <see cref="JSValue"/> holding a new JavaScript object.</returns>
 		/// <exception cref="QuickJSException">Cannot create a new object.</exception>
-		// [MethodImpl(AggressiveInlining)]
-		// public static JSValue CreateObject(JSContext context)
-		// {
-		// 	JSValue obj = JS_NewObject(context);
-		// 	if (obj.Tag == JSTag.Exception)
-		// 		context.ThrowPendingException();
-		// 	return obj;
-		// }
+		[MethodImpl(AggressiveInlining)]
+		public static bool TryCreateObject(JSContext context, out JSValue value)
+		{
+			value = JS_NewObject(context);
+			return value.Tag != JSTag.Exception; 
+		}
 
 		/// <summary>
 		/// Creates a new JavaScript object.
@@ -831,32 +829,26 @@ namespace QuickJS.Native
 		/// <param name="ctx">The context that <see cref="JSValue"/> belongs to.</param>
 		/// <param name="cesu8">Determines if non-BMP1 codepoints are encoded as 1 or 2 utf-8 sequences.</param>
 		/// <returns>A string representation of the value of the current instance.</returns>
-		// public string ToString(JSContext ctx, bool cesu8)
-		// {
-		// 	SizeT len;
-		// 	IntPtr p = JS_ToCStringLen2(ctx, out len, this, cesu8);
-		// 	if (p == IntPtr.Zero)
-		// 		return null;
-
-		// 	try
-		// 	{
-		// 		return Utils.PtrToStringUTF8(p, len);
-		// 	}
-		// 	finally
-		// 	{
-		// 		JS_FreeCString(ctx, p);
-		// 	}
-		// }
+		public string? ToString(JSContext ctx, bool cesu8)
+		{
+			var ptr = JS_ToCStringLen2(ctx, out var length, this, cesu8);
+			if(ptr == IntPtr.Zero){
+				return null;
+			}
+			var str = Marshal.PtrToStringUTF8(ptr, (int)length);
+			JS_FreeCString(ctx, ptr);
+			return str;
+		}
 
 		/// <summary>
 		/// Returns a string representation of the value of the current instance.
 		/// </summary>
 		/// <param name="ctx">The context that <see cref="JSValue"/> belongs to.</param>
 		/// <returns>A string representation of the value of the current instance.</returns>
-		// public string ToString(JSContext ctx)
-		// {
-		// 	return ToString(ctx, false);
-		// }
+		public string? ToString(JSContext ctx)
+		{
+			return ToString(ctx, false);
+		}
 
 		/// <summary>
 		/// Converts a JavaScript object or value to a JSON string, optionally replacing values if

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -11,16 +12,18 @@ public class QuickJsContext : IDisposable
 {
 	private JSContext _ctx;
 	private bool disposedValue;
-	private readonly ILogger _logger;
+	private readonly ILogger<QuickJsContext> _logger;
 	private readonly QuickJsRuntime _rt;
 
-	internal QuickJsContext(QuickJsRuntime rt, ILogger logger){
+	public QuickJsContext(QuickJsRuntime rt, ILogger<QuickJsContext> logger){
 		this._logger = logger;
 		_rt = rt;
 		_ctx = JS_NewContext(rt.Runtime);
 		var global_obj = JS_GetGlobalObject(_ctx);
 		var console = JS_NewObject(_ctx);
-		JS_SetPropertyStr(_ctx, console, "log", JS_NewCFunction(_ctx, JsPrint, "log", 1));
+		JS_SetPropertyStr(_ctx, console, "log", JS_NewCFunction(_ctx, ConsoleLog, "log", 1));
+		JS_SetPropertyStr(_ctx, console, "warn", JS_NewCFunction(_ctx, ConsoleWarn, "warn", 1));
+		JS_SetPropertyStr(_ctx, console, "error", JS_NewCFunction(_ctx, ConsoleErr, "error", 1));
 		JS_SetPropertyStr(_ctx, global_obj, "console", console);
 		JS_FreeValue(_ctx, global_obj);
 	}
@@ -57,28 +60,26 @@ public class QuickJsContext : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	private static string ValueToString(JSContext ctx, JSValue value){
-		var ptr = JS_ToCString(ctx, value);
-		if(ptr == IntPtr.Zero){
-			return null;
-		}
-		var str = Marshal.PtrToStringUTF8(ptr);
-		JS_FreeCString(ctx, ptr);
-		return str;
+	private string LogString(JSContext ctx, JSValue[] argv) => string.Join(", ", argv.Select(x => x.ToString(ctx)).Where(x => x != null));
+
+	public JSValue ConsoleLog(JSContext ctx, JSValue this_val, int argc, JSValue[] argv){
+		_logger.LogInformation(LogString(ctx, argv));
+		return JSValue.Undefined;
 	}
 
-	public JSValue JsPrint(JSContext ctx, JSValue this_val, int argc, JSValue[] argv){
-		foreach(var val in argv){
-			var str = ValueToString(ctx,val);
-			if(str is null) return JSValue.Exception;
-			_logger.LogInformation(str);
-		}
+	public JSValue ConsoleWarn(JSContext ctx, JSValue this_val, int argc, JSValue[] argv){
+		_logger.LogWarning(LogString(ctx, argv));
+		return JSValue.Undefined;
+	}
+
+	public JSValue ConsoleErr(JSContext ctx, JSValue this_val, int argc, JSValue[] argv){
+		_logger.LogError(LogString(ctx, argv));
 		return JSValue.Undefined;
 	}
 
 	private void DumpObj(JSContext ctx, LogLevel level, JSValue val)
 	{
-		var str = ValueToString(ctx, val);
+		var str = val.ToString(ctx);
 		if(str is not null){
 			_logger.Log(level, str);
 		} else {
@@ -134,6 +135,33 @@ public class QuickJsContext : IDisposable
 			}
 		}
 		return ret;
+	}
+
+	private unsafe byte[] CompileBuffer(JSContext ctx, byte[] bytes, string filename, JSEvalFlags eval_flags){
+		fixed (byte* buf = bytes){
+			/* compile the module */
+			var func_val = JS_Eval(ctx, buf, bytes.Length, filename,
+							JSEvalFlags.Module | JSEvalFlags.CompileOnly);
+			if (JS_IsException(func_val))
+				return null;
+			var flags = JSReaderWriterFlags.ReadObjBytecode;
+			var out_buf = JS_WriteObject(ctx,out var out_buf_len, func_val, flags);
+			if (out_buf == IntPtr.Zero) {
+				DumpError(ctx);
+				return null;
+			}
+			js_free(ctx, out_buf);
+
+			// TODO: What do we do with the module?
+			/* the module is already referenced, so we must free it */
+			//m = JS_VALUE_GET_PTR(func_val);
+
+			JS_FreeValue(ctx, func_val);
+			byte[] managedArray = new byte[out_buf_len];
+ 			Marshal.Copy(out_buf, managedArray, 0, (int)out_buf_len);
+			return managedArray;
+		}
+		
 	}
 		
 	private unsafe void EvalBuffer(JSContext ctx, byte[] bytes, string filename, JSEvalFlags eval_flags)

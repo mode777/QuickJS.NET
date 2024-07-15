@@ -25,10 +25,6 @@ public class QuickJsRuntime : IDisposable
 		JS_SetModuleLoaderFunc(_runtime, normalizeFunc, loaderFunc, IntPtr.Zero);
 	}
 
-	public QuickJsContext NewContext(){
-		return new QuickJsContext(this, _logger);
-	}
-
 	private IntPtr ModuleNormalizeDelegate(JSContext ctx, string baseName, string name, IntPtr opaque)
 	{
 		var str = _loader.NormalizeModuleName(name, baseName);

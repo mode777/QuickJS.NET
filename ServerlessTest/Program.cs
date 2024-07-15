@@ -4,8 +4,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddTransient<IQuickJsModuleLoader, QuickJsModuleLoader>();
-builder.Services.AddSingleton<QuickJsRuntime>();
+builder.Services.AddScoped<IQuickJsModuleLoader, QuickJsModuleLoader>();
+builder.Services.AddScoped<QuickJsRuntime>();
+builder.Services.AddScoped<QuickJsContext>();
 
 var app = builder.Build();
 
